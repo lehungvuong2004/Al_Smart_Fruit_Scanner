@@ -56,7 +56,6 @@ data_trai_cay = {
     "watermelon": {"ten": "Dưa hấu", "loi_ich": "🍉 Giải nhiệt cực tốt.", "mon_an": "Nước ép.", "calo": "30 kcal/100g"}
 }
 
-# --- 3. HÀM HỖ TRỢ ---
 @st.cache_resource
 def load_model(project_id, version):
     try:
@@ -75,25 +74,18 @@ def calculate_polygon_area(points):
         area -= points[j]['x'] * points[i]['y']
     return abs(area) / 2.0
 
-# ====================== HÀM GEMINI ĐÃ SỬA (QUAN TRỌNG) ======================
-# ====================== HÀM GEMINI ĐÃ SỬA (DÙNG NGAY) ======================
 def bac_si_kham_benh(img):
     """Bác sĩ AI khám trái cây - Sử dụng model mới 2026"""
     try:
         # Model hiện tại ổn định nhất (hỗ trợ ảnh rất tốt)
         model = genai.GenerativeModel('gemini-2.5-flash')
-        
         prompt = """Bạn là chuyên gia nông nghiệp. 
 Nhìn ảnh trái cây này và trả lời cực ngắn gọn theo đúng format sau:
-
 1. Tình trạng quả: 
 2. Nguyên nhân hỏng (nếu có): 
 3. Lời khuyên dùng:"""
-
         response = model.generate_content([prompt, img])
-        
         return response.text.strip()
-
     except Exception as e:
         error_str = str(e).lower()
         if "429" in error_str or "quota" in error_str or "rate limit" in error_str:
@@ -104,19 +96,13 @@ Nhìn ảnh trái cây này và trả lời cực ngắn gọn theo đúng forma
 # =============================================================================    """Bác sĩ AI khám trái cây - ĐÃ FIX HOÀN TOÀN"""
     try:
         model = genai.GenerativeModel('gemini-1.5-flash')
-        
         prompt = """Bạn là chuyên gia nông nghiệp. 
 Nhìn ảnh trái cây này và trả lời cực ngắn gọn theo đúng format sau:
-
 1. Tình trạng quả: 
 2. Nguyên nhân hỏng (nếu có): 
 3. Lời khuyên dùng:"""
-
-        # Truyền cả prompt + ảnh (đây là lỗi cũ của bạn)
         response = model.generate_content([prompt, img])
-        
         return response.text.strip()
-
     except Exception as e:
         error_str = str(e).lower()
         if "429" in error_str or "quota" in error_str or "rate limit" in error_str:
@@ -124,37 +110,28 @@ Nhìn ảnh trái cây này và trả lời cực ngắn gọn theo đúng forma
         if "404" in error_str or "not found" in error_str:
             return "❌ Model không tồn tại. Đã chuyển sang gemini-1.5-flash."
         return f"❌ Lỗi Gemini: {str(e)}"
-# =============================================================================
 
 # Tải model Roboflow
 model_phan_loai = load_model(PROJECT_ID_1, VERSION_1)
 model_do_hu = load_model(PROJECT_ID_ROT, VERSION_ROT)
 
-# --- 4. GIAO DIỆN NGƯỜI DÙNG (UI) ---
+#  (UI) 
 st.set_page_config(page_title="AI Trái Cây Pro", page_icon="🍎", layout="wide")
-
 with st.sidebar:
     st.header("⚙️ Cấu hình")
     # st.info(f"API Key: ...{GEMINI_API_KEY[-5:]}")
     st.success("Trạng thái: Đang hoạt động")
-
-st.title("🍎 Hệ Thống Giám Định Trái Cây Thông Minh")
+st.title(" Hệ Thống Giám Định Trái Cây Thông Minh")
 st.write(f"Chào **bạn**, ứng dụng đã được tối ưu.")
-
-uploaded_file = st.file_uploader("📤 Tải ảnh trái cây lên...", type=["jpg", "png"])
-
+uploaded_file = st.file_uploader(" Tải ảnh trái cây lên...", type=["jpg", "png"])
 if uploaded_file:
     image = Image.open(uploaded_file)
     st.image(image, caption='Ảnh đã tải lên', width=500)
-    
     col1, col2, col3 = st.columns(3)
-    
     temp_path = "temp_process.jpg"
     image.convert("RGB").save(temp_path)
-
-    # CỘT 1: NHẬN DIỆN LOẠI QUẢ
     with col1:
-        if st.button("🔍 Đây là quả gì?", use_container_width=True, key="btn_detect"):
+        if st.button(" Đây là quả gì?", use_container_width=True, key="btn_detect"):
             with st.spinner('Đang nhận diện...'):
                 if model_phan_loai:
                     res = model_phan_loai.predict(temp_path).json()
@@ -172,7 +149,7 @@ if uploaded_file:
                 else: 
                     st.error("Model Roboflow không phản hồi.")
 
-    # CỘT 2: ĐOÁN % HƯ HỎNG
+    #  ĐOÁN % HƯ HỎNG
     with col2:
         if st.button("📉 Đoán % hư hỏng", use_container_width=True, key="btn_rot"):
             with st.spinner('Đang phân tích vết hỏng...'):
@@ -206,16 +183,12 @@ if uploaded_file:
                 else: 
                     st.error("Model phân tích hư hại chưa sẵn sàng.")
 
-    # CỘT 3: BÁC SĨ AI KHÁM (đã fix)
     with col3:
         if st.button("🩺 Bác sĩ AI khám", use_container_width=True, key="btn_gemini"):
             with st.spinner('Bác sĩ AI đang xem ảnh...'):
                 ket_qua = bac_si_kham_benh(image)
                 st.info(ket_qua)
-
-    # Dọn dẹp file tạm
     if os.path.exists(temp_path):
         os.remove(temp_path)
-
 st.divider()
 st.caption(" Học tập và Phát triển 2026")
